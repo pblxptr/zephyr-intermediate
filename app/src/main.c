@@ -9,13 +9,16 @@ LOG_MODULE_REGISTER(l2_task1, LOG_LEVEL_DBG);
 
 static volatile uint32_t counter;
 static struct k_sem done_sem;
+static K_MUTEX_DEFINE(counter_mtx);
 
 void worker_fn(void *p1, void *p2, void *p3)
 {
     const char *th_name = k_thread_name_get(k_current_get());
 
     for (int i = 0; i < INCREMENTS; i++) {
+        k_mutex_lock(&counter_mtx, K_FOREVER);
         counter++;
+        k_mutex_unlock(&counter_mtx);
     }
 
     LOG_INF("[%s] is done", th_name);
@@ -40,7 +43,7 @@ int main(void)
     if (counter == INCREMENTS * 2) {
         LOG_WRN("No race detected");
     } else {
-        LOG_ERR("Race condition detected, lost %d updates", (INCREMENTS * 2) - counter);
+        LOG_ERR("Race condition detected, lost %u updates", (INCREMENTS * 2) - counter);
     }
 
 
