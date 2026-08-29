@@ -46,13 +46,15 @@
 
 LOG_MODULE_REGISTER(homework, LOG_LEVEL_DBG);
 
-#define STACK_SIZE    1024
-#define SENSOR_MS     100    /* sensor fires every 100ms */
-#define EVENT_COUNT   10     /* total sensor events to produce */
+#define STACK_SIZE          1024
+#define SENSOR_MS           100    /* wait before the burst starts */
+#define BURST_EVENT_COUNT   5      /* events produced in one burst */
+#define BURST_WINDOW_MS     20     /* maximum burst duration required */
+#define DEBOUNCE_MS         30     /* wait for the burst to settle */
 
 /* ================================================================
- * WORKQUEUE VERSION
- * sensor_sim submits work when a real event occurs.
+ * DEBOUNCE VERSION
+ * sensor_sim reschedules delayable work for each event in a burst.
  * ================================================================ */
 
 /* Statistics */
@@ -63,53 +65,54 @@ static void sensor_handler(struct k_work *work)
 {
     ARG_UNUSED(work);
     total_processed++;
-    LOG_INF("[HANDLER] processed event %d  tick=%u",
-             total_processed, k_uptime_get_32());
+    LOG_INF("[HANDLER] processed burst %d  raw_events=%d  tick=%u",
+            total_processed, total_events, k_uptime_get_32());
 }
-K_WORK_DEFINE(sensor_work, sensor_handler);
+K_WORK_DELAYABLE_DEFINE(debounce_work, sensor_handler);
 
 /* ------------------------------------------------------------------ */
-/*  sensor_sim - fires EVENT_COUNT events, 100ms apart               */
+/*  sensor_sim - fires one rapid burst for debounce testing      */
 /* ------------------------------------------------------------------ */
 
 static void sensor_sim_fn(void *p1, void *p2, void *p3)
 {
-    for (int i = 0; i < EVENT_COUNT; i++) {
-        k_msleep(SENSOR_MS);
+    ARG_UNUSED(p1);
+    ARG_UNUSED(p2);
+    ARG_UNUSED(p3);
 
+    k_msleep(SENSOR_MS);
+    uint32_t burst_start = k_uptime_get_32();
+
+    for (int i = 0; i < BURST_EVENT_COUNT; i++) {
         total_events++;
-        LOG_INF("[SENSOR] event %d  tick=%u", i, k_uptime_get_32());
+        uint32_t now = k_uptime_get_32();
+        LOG_INF("[SENSOR] event %d/%d  tick=%u  burst_elapsed=%u",
+                i + 1, BURST_EVENT_COUNT, now, now - burst_start);
 
-        int ret = k_work_submit(&sensor_work);
-        if (ret < 0) { LOG_ERR("submit failed: %d", ret); }
-
-        /*
-         * BONUS: Replace the single k_msleep(SENSOR_MS) above with
-         * a burst of 5 rapid events, then use k_work_reschedule in
-         * the handler to collapse them to one execution.
-         */
+        int ret = k_work_reschedule(&debounce_work, K_MSEC(DEBOUNCE_MS));
+        if (ret < 0) {
+            LOG_ERR("reschedule failed: %d", ret);
+        } else {
+            LOG_INF("[SENSOR] debounce rescheduled for +%dms  tick=%u",
+                    DEBOUNCE_MS, k_uptime_get_32());
+        }
     }
 
-    LOG_INF("[SENSOR] all events produced");
+    LOG_INF("[SENSOR] all events produced in %ums",
+            k_uptime_get_32() - burst_start);
 }
 
 K_THREAD_DEFINE(sensor_thread,  STACK_SIZE, sensor_sim_fn, NULL, NULL, NULL, 5, 0, 0);
 
-/*
- * BONUS PLACEHOLDER - for debounce:
- *
- * K_WORK_DELAYABLE_DEFINE(debounce_work, sensor_handler);
- * In sensor_sim: k_work_reschedule(&debounce_work, K_MSEC(30));
- * ================================================================ */
-
 int main(void)
 {
-    LOG_INF("=== L3 Homework: Workqueue ===");
-    LOG_INF("Workqueue: sensor fires every %dms", SENSOR_MS);
-    LOG_INF("Handler should run once per sensor event.");
+    LOG_INF("=== L3 Homework: Debounced Workqueue ===");
+    LOG_INF("Debounce: %d events within %dms, handler delay %dms",
+            BURST_EVENT_COUNT, BURST_WINDOW_MS, DEBOUNCE_MS);
+    LOG_INF("Handler should run once after the burst.");
 
     /* Wait long enough for all events to complete */
-    k_msleep((EVENT_COUNT + 2) * SENSOR_MS + 500);
+    k_msleep(SENSOR_MS + BURST_WINDOW_MS + DEBOUNCE_MS + 500);
 
     return 0;
 }
