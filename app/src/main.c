@@ -41,8 +41,14 @@ void t_coop_fn(void *p1, void *p2, void *p3)
     for (int i = 0; i < 5; i++) {
         k_busy_wait(40000);
     }
-    LOG_INF("[COOP] yielding now - HIGH, MEDIUM LOW can run");
+    LOG_INF("[COOP] yielding to ready threads of equal or higher priority");
 
+    /*
+     * At priority -1, k_yield() cannot hand the CPU to thread_high (3),
+     * thread_med (5), or thread_low (7). With no ready thread of equal or
+     * higher priority, this thread continues immediately. Those threads
+     * can run only after this entry function returns (or sleeps/blocks).
+     */
     k_yield();
 
     LOG_INF("[COOP] done");
