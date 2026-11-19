@@ -1,0 +1,55 @@
+*** Booting Zephyr OS build v4.4.0 ***
+[00:00:00.000,000] <inf> homework: === L6 Homework: Runtime Investigation ===
+[00:00:00.000,000] <inf> homework: Control priority=7 maintenance priority=4
+[00:00:00.000,000] <inf> homework: Control work must start within 10 ms
+[00:00:00.000,000] <inf> homework: Inspect, measure, trace, explain, and correct the delay
+
+uart:~$ kernel thread list
+Scheduler: 0 since last call
+Threads:
+ 0x41e1e0 maintenance
+	options: 0x0, priority: 4 timeout: 0
+	state: pending, entry: 0x402ca8
+	stack size 2048, unused 2008, usage 40 / 2048 (1 %)
+
+ 0x41e2e0 control
+	options: 0x0, priority: 7 timeout: 0
+	state: pending, entry: 0x402ccc
+	stack size 2048, unused 2008, usage 40 / 2048 (1 %)
+
+*0x41e840 shell_uart
+	options: 0x0, priority: 14 timeout: 0
+	state: queued, entry: 0x40abc9
+	stack size 3072, unused 3032, usage 40 / 3072 (1 %)
+
+ 0x41f3a0 idle
+	options: 0x1, priority: 15 timeout: 0
+	state: , entry: 0x40eb72
+	stack size 256, unused 216, usage 40 / 256 (15 %)
+
+uart:~$ [00:00:00.545,000] <inf> homework: [CONTROL] seq=0 latency=40ms misses=1
+[00:00:00.545,000] <inf> homework: [CONTROL] seq=0 latency=40ms misses=1
+uart:~$ [00:00:00.795,000] <inf> homework: [CONTROL] seq=1 latency=40ms misses=2
+[00:00:00.795,000] <inf> homework: [CONTROL] seq=1 latency=40ms misses=2
+uart:~$ [00:00:01.045,000] <inf> homework: [CONTROL] seq=2 latency=40ms misses=3
+[00:00:01.045,000] <inf> homework: [CONTROL] seq=2 latency=40ms misses=3
+uart:~$ [00:00:01.295,000] <inf> homework: [CONTROL] seq=3 latency=40ms misses=4
+[00:00:01.295,000] <inf> homework: [CONTROL] seq=3 latency=40ms misses=4
+uart:~$ [00:00:01.545,000] <wrn> homework: Skipped 4 messages
+[00:00:01.545,000] <wrn> homework: Skipped 4 messages
+uart:~$ [00:00:01.545,000] <wrn> homework: [CONTROL] deadline_miss count=5 seq=4 latency=40ms
+[00:00:01.545,000] <wrn> homework: [CONTROL] deadline_miss count=5 seq=4 latency=40ms
+uart:~$ [00:00:01.545,000] <inf> homework: [CONTROL] seq=4 latency=40ms misses=5
+[00:00:01.545,000] <inf> homework: [CONTROL] seq=4 latency=40ms misses=5
+uart:~$ [00:00:01.795,000] <inf> homework: [CONTROL] seq=5 latency=40ms misses=6
+[00:00:01.795,000] <inf> homework: [CONTROL] seq=5 latency=40ms misses=6
+uart:~$ [00:00:02.045,000] <inf> homework: [CONTROL] seq=6 latency=40ms misses=7
+[00:00:02.045,000] <inf> homework: [CONTROL] seq=6 latency=40ms misses=7
+uart:~$ [00:00:02.295,000] <inf> homework: [CONTROL] seq=7 latency=40ms misses=8
+[00:00:02.295,000] <inf> homework: [CONTROL] seq=7 latency=40ms misses=8
+uart:~$ [00:00:02.545,000] <inf> homework: [CONTROL] seq=8 latency=40ms misses=9
+[00:00:02.545,000] <inf> homework: [CONTROL] seq=8 latency=40ms misses=9
+uart:~$ [00:00:02.795,000] <inf> homework: [CONTROL] seq=9 latency=40ms misses=10
+[00:00:02.795,000] <inf> homework: [CONTROL] seq=9 latency=40ms misses=10
+uart:~$
+Stopped at 2.910s
